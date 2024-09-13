@@ -1,0 +1,44 @@
+ function doGet(e) {
+  Logger.log(JSON.stringify(e));
+  var result = 'Ok';
+  
+  if (typeof e.parameter === 'undefined') {
+    result = 'No Parameters';
+  } else {
+    var sheet_id = '1nyOwrJMHXKe1PXGv2lY4L22CdZxhU7NAR1OHWrUm1aE'; // Spreadsheet ID
+    var sheet = SpreadsheetApp.openById(sheet_id).getActiveSheet();
+    var newRow = sheet.getLastRow() + 1;
+    var rowData = [];
+    
+    var curr_Date = new Date();
+    rowData[0] = curr_Date; // Date in column A
+    
+    var curr_Time = Utilities.formatDate(curr_Date, "Asia/", 'HH:mm:ss');
+    rowData[1] = curr_Time; // Time in column B
+    
+    for (var param in e.parameter) {
+      Logger.log('In for loop, param=' + param);
+      var value = stripQuotes(e.parameter[param]);
+      Logger.log(param + ':' + e.parameter[param]);
+      
+      switch (param) {
+        case 'air_quality':
+          rowData[2] = value; // Air Quality in column C
+          result = 'Air Quality Written on column C';
+          break;
+        default:
+          result = "unsupported parameter";
+      }
+    }
+    
+    Logger.log(JSON.stringify(rowData));
+    var newRange = sheet.getRange(newRow, 1, 1, rowData.length);
+    newRange.setValues([rowData]);
+  }
+  
+  return ContentService.createTextOutput(result);
+}
+
+function stripQuotes(value) {
+  return value.replace(/^["']|['"]$/g, "");
+}
