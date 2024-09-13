@@ -1,0 +1,101 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+#include "DHT.h"
+#define DHTPIN 2
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+const int MQ135Pin = 34;
+const int MQ2Pin = 35;
+ 
+const int MQ7Pin = 33;
+int MQ135Value, MQ2Value, MQ7Value;
+
+const char* ssid = "V2040";
+const char* password = "16410325";
+
+const char* GAS_URL = "https://script.google.com/macros/s/AKfycbx8vZ4j59gvttUSk8dRydrsj7vg3gTidWUEGtFxW4ARoMdrUAVkAy_Mm0tdlH8bkVcBeQ/exec";
+
+void setup() {
+  Serial.begin(115200);
+
+  dht.begin();
+
+  connectToWiFi();
+  
+  pinMode(MQ135Pin, INPUT);
+  pinMode(MQ2Pin, INPUT);
+  pinMode(MQ7Pin, INPUT);
+}
+
+void loop() {
+  float humidity = dht.readHumidity();
+  float temperature = dht.readTemperature();
+
+  MQ135Value = analogRead(MQ135Pin);
+  MQ2Value = analogRead(MQ2Pin);
+  MQ7Value = analogRead(MQ7Pin);
+
+  Serial.print("Temperature: ");
+  Serial.println(temperature);
+  Serial.print("Humidity: ");
+  Serial.println(humidity);
+  Serial.print("MQ135 Value: ");
+  Serial.println(MQ135Value);
+  Serial.print("MQ2 Value: ");
+  Serial.println(MQ2Value);
+  Serial.print("MQ7 Value: ");
+  Serial.println(MQ7Value);
+
+  sendData(temperature, humidity, MQ135Value, MQ2Value, MQ7Value);
+
+  delay(5000);
+}
+
+void sendData(float temperature, float humidity, int mq135, int mq2, int mq7) {
+  HTTPClient http;
+
+  String data = "temperature=" + String(temperature) +
+                "&humidity=" + String(humidity) +
+                "&mq135=" + String(mq135) +
+                "&mq2=" + String(mq2) +
+                "&mq7=" + String(mq7);
+
+  http.begin(GAS_URL);
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  
+  int httpResponseCode = http.POST(data);
+
+  if (httpResponseCode > 0) {
+    String response = http.getString();
+    Serial.print("HTTP Response Code: ");
+    Serial.println(httpResponseCode);
+    Serial.println(response);
+  } else {
+    Serial.print("Error in HTTP POST request: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
+}
+
+void connectToWiFi() {
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 10) {
+    delay(1000);
+    Serial.print(".");
+    attempts++;
+  }
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi connected.");
+  } else {
+    Serial.println("\nFailed to connect to WiFi.");
+    // You can add additional error handling or retry logic here
+  }
+}
+

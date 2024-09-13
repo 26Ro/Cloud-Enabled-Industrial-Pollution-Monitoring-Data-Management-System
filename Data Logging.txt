@@ -1,0 +1,98 @@
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h>
+#include <ESP8266WebServer.h>
+
+const char* ssid = "V2040";
+const char* password = "16410325";
+
+const char* host = "script.google.com";
+const int httpsPort = 443;
+
+const char* scriptId = "AKfycbw9xMKh_anJiieVfimdbj_mX4RyWq87sIyUjSBNfO6g-sT5Tjs6fjcLjGT7vlfw-lt4Ag";
+
+const int mq135Pin = A0; // Assuming MQ135 sensor is connected to pin A0 (D3 on NodeMCU)
+
+void setup() {
+  Serial.begin(115200);
+  
+  pinMode(mq135Pin, INPUT); // Set MQ135 pin as input
+  
+  connectWiFi();
+
+  // Your setup code goes here
+}
+
+void loop() {
+  // Read sensor data
+  float mq135_reading = readMQ135();
+
+  // Send data to Google Apps Script
+  sendToGoogleAppsScript(mq135_reading);
+
+  delay(5000); // Adjust delay as needed
+}
+
+void connectWiFi() {
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+float readMQ135() {
+  int sensorValue = analogRead(mq135Pin); // Read analog value from MQ135 pin
+  float voltage = sensorValue * (3.3 / 1023.0); // Convert analog value to voltage (3.3V is assumed)
+
+  // Assuming your MQ135 sensor's output voltage corresponds to a gas concentration in PPM
+  // You need to calibrate this based on your specific sensor and gas being measured
+  float calibrationFactor = 1.0; // Update this with your calibration factor
+  float ppm = calibrationFactor * voltage; // Apply the calibration factor to the voltage
+
+  return ppm;
+}
+
+void sendToGoogleAppsScript(float mq135_reading) {
+  WiFiClientSecure client;
+  if (!client.connect(host, httpsPort)) {
+    Serial.println("Connection failed");
+    return;
+  }
+
+  String url = "/macros/s/" + String(scriptId) + "/exec?mq135_reading=" + String(mq135_reading);
+
+  Serial.print("Requesting URL: ");
+  Serial.println(url);
+
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +
+               "Connection: close\r\n\r\n");
+
+  unsigned long timeout = millis();
+  while (client.available() == 0) {
+    if (millis() - timeout > 5000) {
+      Serial.println(">>> Client Timeout !");
+      client.stop();
+      return;
+    }
+  }
+
+  while(client.available()) {
+    String line = client.readStringUntil('\r');
+    Serial.print(line);
+  }
+
+  Serial.println();
+  Serial.println("Closing connection");
+}

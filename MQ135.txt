@@ -1,0 +1,23 @@
+ const int ANALOG_PIN = A0; // Analog pin the sensor is connected to
+
+void setup() {
+  Serial.begin(9600); // Initialize serial communication
+}
+
+void loop() {
+  int sensorValue = analogRead(ANALOG_PIN); // Read analog value from sensor
+  float voltage = sensorValue * (5.0 / 1023.0); // Convert analog value to voltage (assuming 5V Arduino)
+  
+  // Convert voltage to gas concentration (refer to MQ135 datasheet for the formula)
+  float ppm = 116.6020682 * pow(voltage, -2.769034857); // For example, this is for CO2
+  
+  // Print the sensor value and gas concentration to serial monitor
+  Serial.print("Sensor Value: ");
+  Serial.print(sensorValue);
+  Serial.print(", Voltage: ");
+  Serial.print(voltage);
+  Serial.print("V, PPM: ");
+  Serial.println(ppm);
+  
+  delay(1000); // Delay for readability (optional)
+}

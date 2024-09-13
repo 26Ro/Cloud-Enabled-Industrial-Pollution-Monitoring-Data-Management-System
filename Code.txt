@@ -1,0 +1,59 @@
+#include <DHT.h>
+
+// DHT Sensor
+#define DHTPIN 2
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+// MQ135 Sensor
+const int MQ135Pin = 34; // Analog pin for MQ135
+int MQ135Value;
+
+// MQ2 Sensor
+const int MQ2Pin = 35; // Analog pin for MQ2
+int MQ2Value;
+
+// MQ7 Sensor
+const int MQ7Pin = 33; // Analog pin for MQ7
+int MQ7Value;
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Initialize DHT sensor
+  dht.begin();
+
+  // Set analog pin modes for sensors
+  pinMode(MQ135Pin, INPUT);
+  pinMode(MQ2Pin, INPUT);
+  pinMode(MQ7Pin, INPUT);
+}
+
+void loop() {
+  // Read DHT11 sensor data
+  float humidity = dht.readHumidity();
+  float temperature = dht.readTemperature();
+
+  // Read MQ135 sensor data
+  MQ135Value = analogRead(MQ135Pin);
+
+  // Read MQ2 sensor data
+  MQ2Value = analogRead(MQ2Pin);
+
+  // Read MQ7 sensor data
+  MQ7Value = analogRead(MQ7Pin);
+
+  // Print sensor data
+  Serial.print("Temperature: ");
+  Serial.println(temperature);
+  Serial.print("Humidity: ");
+  Serial.println(humidity);
+  Serial.print("MQ135 Value: ");
+  Serial.println(MQ135Value);
+  Serial.print("MQ2 Value: ");
+  Serial.println(MQ2Value);
+  Serial.print("MQ7 Value: ");
+  Serial.println(MQ7Value);
+
+  delay(5000); // Delay for 5 seconds before next reading
+}
